@@ -30,6 +30,11 @@ app.use(cors({
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: false }));
 
+//Welcome ebdpoint
+app.get('/', (req, res) => {
+  res.json({ message: 'Welcome to the App' });
+});
+
 // Routes
 
 app.use('/api/user/cart', require('./routes/cartRoutes'));
