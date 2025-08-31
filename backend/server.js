@@ -21,7 +21,12 @@ const PORT = process.env.PORT || 8070;
 connectDB();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: false }));
 
@@ -55,8 +60,6 @@ app.use('/api/orders', require('./routes/orders'));
 app.use('/api', require('./routes/otpRoutes'));
 
 app.use('/inventory', require('./routes/inventoryRoutes'));
-
-//app.use('/backend/img/inventory', express.static('backend/img/inventory'));
 
 // Error handler middleware
 app.use(errorHandler);
