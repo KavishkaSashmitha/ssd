@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
+const sanitizeHtml = require('sanitize-html');
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -15,6 +16,12 @@ const transporter = nodemailer.createTransport({
 exports.sendMail = async (req, res) => {
   const { to, subject, text, html, attachments } = req.body;
 
+  //Sanitize HTML content
+  const sanitizedHtml = sanitizeHtml(html, {
+    allowedTags: ['b', 'i', 'em', 'strong', 'p'],
+    allowedAttributes: {}
+  });
+
   try {
     // Create mail options
     const to = 'kavindi@gmail.com';
@@ -24,11 +31,12 @@ exports.sendMail = async (req, res) => {
         name: 'Herbal Heaven',
         address: process.env.EMAIL,
       },
-      to,
-      subject,
-      text,
-      html,
-      attachments,
+      to: to,
+      subject: sanitizeHtml(subject, { allowedTags: [] }),
+      text: sanitizeHtml(text, { allowedTags: [] }),
+      html: sanitizedHtml,
+      attachments
+
     };
 
     // Send mail
