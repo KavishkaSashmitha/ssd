@@ -12,11 +12,20 @@ const generateOTP = () => {
 const otpMap = new Map();
 
 // Nodemailer configuration
+// const transporter = nodemailer.createTransport({
+//   service: "gmail",
+//   auth: {
+//     user: "herbalheaven.pvt.ltd@gmail.com",
+//     pass: "kiwh seby gmdu ywmx",
+//   },
+// });
+
+// Using environment variables for email credentials - IA
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "herbalheaven.pvt.ltd@gmail.com",
-    pass: "kiwh seby gmdu ywmx",
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
 
@@ -28,7 +37,8 @@ router.post("/send-otp", (req, res) => {
 
     // Send OTP via email
     const mailOptions = {
-      from: "herbalheaven.pvt.ltd@gmail.com",
+      //from: "herbalheaven.pvt.ltd@gmail.com",
+      from: process.env.EMAIL_USER,
       to: email,
       subject: "OTP Verification",
       text: `Your OTP for verification is: ${otp}`,
