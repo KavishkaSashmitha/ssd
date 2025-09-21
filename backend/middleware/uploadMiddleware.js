@@ -1,4 +1,5 @@
 const { config } = require('dotenv');
+const { escape } = require('html-escaper');
 const { initializeApp } = require('firebase/app');
 const {
   getStorage,
@@ -55,10 +56,14 @@ const uploadMiddleware = (req, res) => {
         type: req.file.mimetype,
         downloadURL: downloadURL,
       };
-      console.log('Response:', response); // Log the response
       return res.status(200).json(response);
     } catch (error) {
-      return res.status(400).send(error.message);
+      // Sanitize the error message before sending
+      const sanitizedError = {
+        message: escape(error.message),
+        status: 'error'
+      };
+      return res.status(400).json(sanitizedError);
     }
   });
 
