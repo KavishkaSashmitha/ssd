@@ -104,7 +104,29 @@ router.put("/post/salary/:id", (req, res) => {
   const { id } = req.params;
   const { month, amount } = req.body;
 
-  const salaryUpdate = { [`salary.${month.toLowerCase()}`]: amount };
+  // Input validation
+  if (!id || typeof id !== 'string') {
+    return res.status(400).json({ success: false, message: 'Invalid ID' });
+  }
+
+  if (!month || typeof month !== 'string' || month.length > 20) {
+    return res.status(400).json({ success: false, message: 'Invalid month' });
+  }
+
+  if (amount === undefined || amount === null) {
+    return res.status(400).json({ success: false, message: 'Amount is required' });
+  }
+
+  // Validate amount is a number and positive
+  const numAmount = Number(amount);
+  if (isNaN(numAmount) || numAmount < 0) {
+    return res.status(400).json({ success: false, message: 'Amount must be a positive number' });
+  }
+
+  // Sanitize month input
+  const sanitizedMonth = month.trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
+
+  const salaryUpdate = { [`salary.${sanitizedMonth}`]: numAmount };
   Posts.findByIdAndUpdate(id, {
     $set: salaryUpdate,
   })

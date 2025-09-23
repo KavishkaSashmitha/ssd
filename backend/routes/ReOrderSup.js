@@ -94,7 +94,34 @@ router.put("/materialCost/:id", (req, res) => {
   const { id } = req.params;
   const { month, productId, quantity, productName } = req.body;
 
-  const matcostUpdate = { [`Reorder.${month}${productName.toLowerCase()}`]: quantity };
+  // Input validation
+  if (!id || typeof id !== 'string') {
+    return res.status(400).json({ success: false, message: 'Invalid ID' });
+  }
+
+  if (!month || typeof month !== 'string' || month.length > 20) {
+    return res.status(400).json({ success: false, message: 'Invalid month' });
+  }
+
+  if (!productName || typeof productName !== 'string' || productName.length > 100) {
+    return res.status(400).json({ success: false, message: 'Invalid product name' });
+  }
+
+  if (quantity === undefined || quantity === null) {
+    return res.status(400).json({ success: false, message: 'Quantity is required' });
+  }
+
+  // Validate quantity is a number and positive
+  const numQuantity = Number(quantity);
+  if (isNaN(numQuantity) || numQuantity < 0) {
+    return res.status(400).json({ success: false, message: 'Quantity must be a positive number' });
+  }
+
+  // Sanitize inputs
+  const sanitizedMonth = month.trim().toLowerCase();
+  const sanitizedProductName = productName.trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
+
+  const matcostUpdate = { [`Reorder.${sanitizedMonth}${sanitizedProductName}`]: numQuantity };
   ReOrder.findByIdAndUpdate(id, {
     $set: matcostUpdate,
   })
