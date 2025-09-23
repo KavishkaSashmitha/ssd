@@ -10,6 +10,20 @@ import AdminNavbar from '../components/AdminNavbar';
 import { DefaultSidebar } from '../components/Manager-Sidebar';
 import { toast } from 'react-toastify';
 
+const sanitizeImageUrl = (url) => {
+  try {
+    const sanitizedUrl = new URL(url);
+    // Only allow specific protocols
+    if (!['http:', 'https:'].includes(sanitizedUrl.protocol)) {
+      return '';
+    }
+    return sanitizedUrl.toString();
+  } catch (e) {
+    // If URL is invalid, return empty string
+    return '';
+  }
+};
+
 const InventoryList = () => {
   const [open, setOpen] = React.useState(0);
 
@@ -165,9 +179,8 @@ const InventoryList = () => {
     >
       <div className="flex flex-1 overflow-scroll">
         <div
-          className={`sidebar w-68 bg-custom-color text-white ${
-            open ? 'block' : 'hidden'
-          }`}
+          className={`sidebar w-68 bg-custom-color text-white ${open ? 'block' : 'hidden'
+            }`}
         >
           <DefaultSidebar open={open} handleOpen={setOpen} />
         </div>
@@ -354,9 +367,13 @@ const InventoryList = () => {
                       >
                         {item.image && (
                           <img
-                            src={`${item.image}`}
+                            src={sanitizeImageUrl(item.image)}
                             alt="Product"
                             style={{ width: '100px', height: '80px' }}
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = '/placeholder-image.png'; // Add a default fallback image
+                            }}
                           />
                         )}
                       </Typography>

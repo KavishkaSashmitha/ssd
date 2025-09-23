@@ -15,6 +15,28 @@ import { QrReader } from "react-qr-reader";
 import QRCode from "qrcode";
 import { toast } from "react-toastify";
 
+const sanitizeImageUrl = (url) => {
+  try {
+    const parsed = new URL(url);
+    // Only allow specific domains and protocols
+    if (!parsed.protocol.match(/^https?:$/)) {
+      return '/default-image.png'; // Return a default image path if protocol is not http/https
+    }
+    return url;
+  } catch (e) {
+    // If URL parsing fails, return a default image
+    return '/default-image.png';
+  }
+};
+
+const sanitizeFileName = (fileName) => {
+  // Remove any unsafe characters and limit length
+  return fileName
+    .replace(/[^a-zA-Z0-9-_]/g, '_') // Replace unsafe chars with underscore
+    .substring(0, 100); // Limit length
+};
+
+
 const ProductList = () => {
   const [products, setProducts] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -156,18 +178,50 @@ const ProductList = () => {
 
   const generateAndDownloadQRCode = async () => {
     if (selectedProducts.length === 1) {
-      const product = selectedProducts[0];
-      const qrCodeDataUrl = await QRCode.toDataURL(product.name);
+      try {
+        const product = selectedProducts[0];
 
-      const downloadLink = document.createElement("a");
-      downloadLink.href = qrCodeDataUrl;
-      downloadLink.download = `${product.name}-qrcode.png`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
+        // Validate product name exists
+        if (!product?.name) {
+          throw new Error('Invalid product name');
+        }
+
+        // Generate QR code
+        const qrCodeDataUrl = await QRCode.toDataURL(product.name);
+
+        // Validate QR code data URL
+        if (!qrCodeDataUrl.startsWith('data:image/png;base64,')) {
+          throw new Error('Invalid QR code generated');
+        }
+
+        // Create download link
+        const downloadLink = document.createElement('a');
+        downloadLink.href = qrCodeDataUrl;
+
+        // Sanitize filename
+        const safeFileName = sanitizeFileName(product.name);
+        downloadLink.download = `${safeFileName}-qrcode.png`;
+
+        // Use click() directly instead of appending to document
+        downloadLink.style.display = 'none';
+        document.body.appendChild(downloadLink);
+
+        try {
+          downloadLink.click();
+        } finally {
+          // Always clean up the DOM
+          document.body.removeChild(downloadLink);
+        }
+
+        toast.success('QR Code generated successfully');
+
+      } catch (error) {
+        console.error('Error generating QR code:', error);
+        toast.error('Failed to generate QR code');
+      }
     } else if (selectedProducts.length > 1) {
-      // Logic to generate QR codes for multiple selected products
-      // Same as the existing logic
+      // Handle multiple products
+      toast.warning('Please select only one product');
     }
   };
 
@@ -188,9 +242,8 @@ const ProductList = () => {
     >
       <div className="flex flex-1 overflow-scroll">
         <div
-          className={`sidebar w-68 bg-custom-color text-white ${
-            open ? "block" : "hidden"
-          }`}
+          className={`sidebar w-68 bg-custom-color text-white ${open ? "block" : "hidden"
+            }`}
         >
           <DefaultSidebar open={open} handleOpen={setOpen} />
         </div>
@@ -252,9 +305,13 @@ const ProductList = () => {
                       <td className="p-4">Rs.{product.price}</td>
                       <td className="p-4">
                         <img
-                          src={product.image}
+                          src={sanitizeImageUrl(product.image)}
                           alt={product.name}
                           style={{ width: "50px" }}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = '/default-image.png';
+                          }}
                         />
                       </td>
                       <td className="p-4">

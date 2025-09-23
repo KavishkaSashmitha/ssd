@@ -1,2 +1,6 @@
-node_modules
+# Environment files
+.env
+backend/.env
 
+# macOS system files
+.DS_Store
