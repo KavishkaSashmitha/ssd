@@ -1,4 +1,6 @@
 const express = require('express');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 require('dotenv').config();
 const connectDB = require('./config/dbConfig');
@@ -20,7 +22,17 @@ const PORT = process.env.PORT || 8070;
 // Connect to MongoDB
 connectDB();
 
+// Security Middleware
+app.use(helmet());
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+});
+app.use(limiter);
+
 // Middleware
+
 // Secure CORS configuration
 
 const corsOptions = {
@@ -50,8 +62,23 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: false }));
+
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Content-Security-Policy', "default-src 'self'");
+  next();
+});
+
+
+//Welcome ebdpoint
+app.get('/', (req, res) => {
+  res.json({ message: 'Welcome to the App' });
+});
 
 // Routes
 
@@ -83,8 +110,6 @@ app.use('/api/orders', require('./routes/orders'));
 app.use('/api', require('./routes/otpRoutes'));
 
 app.use('/inventory', require('./routes/inventoryRoutes'));
-
-//app.use('/backend/img/inventory', express.static('backend/img/inventory'));
 
 // Error handler middleware
 app.use(errorHandler);
