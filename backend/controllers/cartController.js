@@ -84,12 +84,38 @@ const deleteCartItems = asyncHandler(async (req, res) => {
 const updateCartQuantity = asyncHandler(async (req, res) => {
   const { items } = req.body;
 
+  // Input validation
+  if (!items || !Array.isArray(items)) {
+    return res.status(400).json({ message: 'Items must be an array' });
+  }
+
   try {
     // Loop through each item in the request body and update the quantity in the database
     await Promise.all(
       items.map(async (item) => {
+        // Validate item structure
+        if (!item || typeof item !== 'object') {
+          throw new Error('Invalid item structure');
+        }
+        
         const { id, quantity } = item;
-        await Cart.findByIdAndUpdate(id, { quantity });
+        
+        // Validate required fields
+        if (!id || typeof id !== 'string') {
+          throw new Error('Invalid item ID');
+        }
+        
+        if (quantity === undefined || quantity === null) {
+          throw new Error('Quantity is required');
+        }
+        
+        // Validate quantity is a number and positive
+        const numQuantity = Number(quantity);
+        if (isNaN(numQuantity) || numQuantity < 0) {
+          throw new Error('Quantity must be a positive number');
+        }
+        
+        await Cart.findByIdAndUpdate(id, { quantity: numQuantity });
       })
     );
 
