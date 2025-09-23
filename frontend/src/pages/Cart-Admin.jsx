@@ -57,23 +57,21 @@ export function CartAdmin() {
     );
     setFilteredCartItems(filteredItems);
   }, [searchInput, cartItems]);
+  
   const getUniqueUsers = () => {
-    const uniqueUsers = {};
-    cartItems.forEach((item) => {
-      if (item.customer && item.customer.email) {
-        // Add null check
-        if (!uniqueUsers[item.customer.email]) {
-          uniqueUsers[item.customer.email] = {
-            email: item.customer.email,
-            count: 1,
-          };
-        } else {
-          uniqueUsers[item.customer.email].count += 1;
-        }
+  const uniqueUsers = new Map();
+  cartItems.forEach((item) => {
+    if (item.customer && item.customer.email) {
+      const email = item.customer.email;
+      if (!uniqueUsers.has(email)) {
+        uniqueUsers.set(email, { email, count: 1 });
+      } else {
+        uniqueUsers.get(email).count += 1;
       }
-    });
-    return Object.values(uniqueUsers);
-  };
+    }
+  });
+  return Array.from(uniqueUsers.values());
+};
 
   // Get current items
   const indexOfLastItem = currentPage * itemsPerPage;
