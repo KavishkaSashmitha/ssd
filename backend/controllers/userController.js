@@ -8,11 +8,27 @@ const User = require('../model/userModel');
 //@route POST/api/users
 //@access public
 const signup = AsyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+  // Sanitize inputs
+  const name = req.body.name?.trim();
+  const email = req.body.email?.trim().toLowerCase();
+  const password = req.body.password;
 
   if (!name || !email || !password) {
     res.status(400);
     throw new Error('Please Add all Fields');
+  }
+
+  // Email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    res.status(400);
+    throw new Error('Please provide a valid email address');
+  }
+
+  // Password strength validation
+  if (password.length < 6) {
+    res.status(400);
+    throw new Error('Password must be at least 6 characters long');
   }
 
   //check if user exist
@@ -38,8 +54,8 @@ const signup = AsyncHandler(async (req, res) => {
     res.status(201).json({
       _id: user.id,
       name: user.name,
-      password: user.password,
-      isAdmin: false,
+      email: user.email,
+      isAdmin: user.isAdmin,
       token: generateToken(user._id),
     });
   } else {
@@ -51,7 +67,14 @@ const signup = AsyncHandler(async (req, res) => {
 //@route POST/api/users
 //@access public
 const loginUser = AsyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  // Sanitize inputs
+  const email = req.body.email?.trim().toLowerCase();
+  const password = req.body.password;
+
+  if (!email || !password) {
+    res.status(400);
+    throw new Error('Please provide email and password');
+  }
 
   const user = await User.findOne({ email });
 
