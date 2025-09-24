@@ -14,7 +14,7 @@ function DashBoard() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
   };
 
   const handleEditProfile = () => {
@@ -35,7 +35,7 @@ function DashBoard() {
           }
         });
         logout();
-        navigate('/login');
+        navigate('/');
         alert('User deleted successfully');
       } catch (error) {
         console.error('Error deleting customer account:', error);

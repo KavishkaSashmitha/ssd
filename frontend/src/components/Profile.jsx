@@ -26,10 +26,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "./cartContext";
 import { toast } from "react-toastify";
 import axios from "axios";
+import GoogleOAuthNew from "./GoogleOAuthNew";
 
 const ProfileMenu = () => {
   const { isLoggedIn, login, logout } = useAuth();
-  const { cartCount } = useCart();
+  const { cartCount, updateCartCount, setCartCount } = useCart();
   const [open, setOpen] = React.useState(false);
   const handleOpen = () => setOpen((cur) => !cur);
   const [email, setEmail] = useState("");
@@ -64,19 +65,51 @@ const ProfileMenu = () => {
       const token = response.data.token;
 
       // Save the token to local storage or a state management solution
-      localStorage.setItem("token", token);
+      localStorage.setItem("userToken", token);
 
       // Update the global authentication state
       login(token);
 
-      navigate("/");
+      navigate("/products");
       setOpen(false);
+      // Update cart count after login
+      updateCartCount();
     } catch (error) {
-      console.error("Login failed:", error.response.data);
-      toast.error("Login Failed");
+      console.error("Login failed:", error);
+      
+      if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
+        toast.error("Cannot connect to backend server. Please ensure the backend is running on port 8070.");
+      } else if (error.response) {
+        // Server responded with error status
+        toast.error(`Login failed: ${error.response.data?.message || 'Invalid credentials'}`);
+      } else if (error.request) {
+        // Request was made but no response received
+        toast.error("No response from server. Please check your connection.");
+      } else {
+        toast.error("Login Failed");
+      }
       setEmail("");
       setPassword("");
     }
+  };
+
+  const handleGoogleSuccess = (userData) => {
+    login(userData.token);
+    setOpen(false);
+    navigate("/products");
+    // Update cart count after login
+    updateCartCount();
+  };
+
+  const handleGoogleFailure = (error) => {
+    console.error("Google login failed:", error);
+  };
+
+  const handleLogout = () => {
+    logout();
+    // Reset cart count when logging out
+    setCartCount(0);
+    navigate('/');
   };
 
   return (
@@ -85,17 +118,19 @@ const ProfileMenu = () => {
         <Typography variant="medium" className=" font-bold text-teal-50 mr-4">
           {currentTime}
         </Typography>
-        <Link to="/user/cart">
-          <Badge content={cartCount} overlap="circular" placement="top-end">
-            <IconButton
-              variant="text"
-              color="black"
-              className=" mb-2 mr-0 hover:text-light-green-400 text-white"
-            >
-              <ShoppingCartIcon className="h-8 w-6" />
-            </IconButton>
-          </Badge>
-        </Link>
+        {isLoggedIn && (
+          <Link to="/user/cart">
+            <Badge content={cartCount} overlap="circular" placement="top-end">
+              <IconButton
+                variant="text"
+                color="black"
+                className=" mb-2 mr-0 hover:text-light-green-400 text-white"
+              >
+                <ShoppingCartIcon className="h-8 w-6" />
+              </IconButton>
+            </Badge>
+          </Link>
+        )}
 
         <IconButton
           variant="text"
@@ -212,7 +247,7 @@ const ProfileMenu = () => {
                 </Typography>
               </MenuItem>
               <hr className="my-2 border-blue-gray-50" />
-              <MenuItem className="flex items-center gap-2 ">
+              <MenuItem className="flex items-center gap-2" onClick={handleLogout}>
                 <svg
                   width="16"
                   height="14"
@@ -230,7 +265,6 @@ const ProfileMenu = () => {
                 <Typography
                   variant="small"
                   className="font-medium"
-                  onClick={logout}
                 >
                   Sign Out
                 </Typography>
@@ -290,6 +324,25 @@ const ProfileMenu = () => {
                   >
                     Sign In
                   </Button>
+                  
+                  <div className="mt-4">
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300" />
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4">
+                      <GoogleOAuthNew 
+                        onSuccess={handleGoogleSuccess}
+                        onError={handleGoogleFailure}
+                      />
+                    </div>
+                  </div>
+                  
                   <Typography
                     variant="small"
                     className="mt-4 flex justify-center"

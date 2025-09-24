@@ -2,6 +2,7 @@ const AsyncHandler = require('express-async-handler');
 const bcrypt = require('bcryptjs');
 const Customer = require('../model/customerModel');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
 
 // Generate Token
 const generateToken = (id) => {
@@ -193,6 +194,84 @@ const getAllCustomers = AsyncHandler(async (req, res) => {
   }
 });
 
+// @desc Google OAuth Login/Signup
+// @route POST /api/customer/google-auth
+// @access public
+const googleAuth = AsyncHandler(async (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    res.status(400);
+    throw new Error('Google token is required');
+  }
+
+  try {
+    // Initialize Google OAuth client
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    
+    // Verify the Google token
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name, picture } = payload;
+
+    // Check if user already exists
+    let customer = await Customer.findOne({ 
+      $or: [
+        { email },
+        { googleId }
+      ]
+    });
+
+    if (customer) {
+      // Update existing customer with Google ID if not already set
+      if (!customer.googleId) {
+        customer.googleId = googleId;
+        customer.authProvider = 'google';
+        customer.profilePicture = picture;
+        await customer.save();
+      }
+    } else {
+      // Create new customer
+      customer = await Customer.create({
+        name,
+        email,
+        googleId,
+        authProvider: 'google',
+        profilePicture: picture,
+        // Set default values for required fields
+        mobileNumber: '00000000001',
+        gender: 'other',
+        age: 18,
+        address: 'Not provided',
+      });
+    }
+
+    // Generate JWT token
+    const jwtToken = generateToken(customer._id);
+
+    res.status(200).json({
+      _id: customer.id,
+      name: customer.name,
+      email: customer.email,
+      mobileNumber: customer.mobileNumber,
+      gender: customer.gender,
+      age: customer.age,
+      address: customer.address,
+      profilePicture: customer.profilePicture,
+      authProvider: customer.authProvider,
+      token: jwtToken,
+    });
+  } catch (error) {
+    console.error('Google OAuth error:', error);
+    res.status(400);
+    throw new Error('Invalid Google token');
+  }
+});
+
 module.exports = {
   signup,
   loginUser,
@@ -200,4 +279,5 @@ module.exports = {
   updateProfile,
   deleteProfile,
   getAllCustomers,
+  googleAuth,
 };

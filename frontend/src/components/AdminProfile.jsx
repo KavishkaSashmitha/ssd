@@ -97,7 +97,7 @@ const AdminProfileMenu = () => {
       const token = response.data.token;
 
       // Save the token to local storage or a state management solution
-      localStorage.setItem('token', token);
+      localStorage.setItem('userToken', token);
 
       // Update the global authentication state
       login(token);
@@ -113,11 +113,11 @@ const AdminProfileMenu = () => {
   };
   const handleLogout = () => {
     // Clear authentication token from local storage
-    localStorage.removeItem('token');
+    localStorage.removeItem('userToken');
     localStorage.removeItem('manager');
     // Update the global authentication state
     logout();
-    // Redirect to the login page
+    // Redirect to the home page
     navigate('/');
   };
 

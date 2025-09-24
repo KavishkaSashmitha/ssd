@@ -1,4 +1,5 @@
 import React, { useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   IconButton,
   Typography,
@@ -41,7 +42,8 @@ export function SidebarWithBurgerMenu({}) {
   const [open, setOpen] = React.useState(0);
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
   const { isLoggedIn, logout } = useAuth(); // Destructuring isLoggedIn and logout from useAuth hook
-  const { cartCount } = useCart();
+  const { cartCount, setCartCount } = useCart();
+  const navigate = useNavigate();
 
   const handleOpen = (value) => {
     setOpen(open === value ? 0 : value);
@@ -49,6 +51,13 @@ export function SidebarWithBurgerMenu({}) {
 
   const openDrawer = () => setIsDrawerOpen(true);
   const closeDrawer = () => setIsDrawerOpen(false);
+
+  const handleLogout = () => {
+    logout();
+    // Reset cart count when logging out
+    setCartCount(0);
+    navigate('/');
+  };
 
   return (
     <>
@@ -207,7 +216,7 @@ export function SidebarWithBurgerMenu({}) {
                     </Typography>
                   </ListItem>
                 </Link>
-                <ListItem className="p-2 mt-3 py-2 bg-red-500" onClick={logout}>
+                <ListItem className="p-2 mt-3 py-2 bg-red-500" onClick={handleLogout}>
                   <ListItemPrefix>
                     <PowerIcon className="h-5 w-5" />
                   </ListItemPrefix>
